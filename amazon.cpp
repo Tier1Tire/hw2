@@ -9,6 +9,7 @@
 #include "db_parser.h"
 #include "product_parser.h"
 #include "util.h"
+#include "mydatastore.h"
 
 using namespace std;
 struct ProdNameSorter {
@@ -25,11 +26,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    /****************
-     * Declare your derived DataStore object here replacing
-     *  DataStore type to your derived type
-     ****************/
-    DataStore ds;
+    MyDataStore ds;
 
 
 
@@ -61,12 +58,14 @@ int main(int argc, char* argv[])
     cout << "  QUIT new_db_filename               " << endl;
     cout << "====================================" << endl;
 
-    vector<Product*> hits;
+vector<Product*> hits;
     bool done = false;
     while(!done) {
         cout << "\nEnter command: " << endl;
         string line;
-        getline(cin,line);
+        if(!getline(cin, line)) {
+            break;
+        }
         stringstream ss(line);
         string cmd;
         if((ss >> cmd)) {
@@ -90,20 +89,60 @@ int main(int argc, char* argv[])
                 hits = ds.search(terms, 1);
                 displayProducts(hits);
             }
-            else if ( cmd == "QUIT") {
-                string filename;
-                if(ss >> filename) {
-                    ofstream ofile(filename.c_str());
-                    ds.dump(ofile);
-                    ofile.close();
+            else if ( cmd == "ADD" ) {
+                string username;
+                int hitIndex;
+                string extra;
+                if(!(ss >> username >> hitIndex) || (ss >> extra)) {
+                    cout << "Invalid request" << endl;
                 }
-                done = true;
+                else {
+                    ds.addToCart(username, hits, hitIndex);
+                }
             }
-	    /* Add support for other commands here */
-
-
-
-
+            else if ( cmd == "VIEWCART" ) {
+                string username;
+                string extra;
+                if(!(ss >> username) || (ss >> extra)) {
+                    cout << "Invalid username" << endl;
+                }
+                else {
+                    ds.viewCart(username);
+                }
+            }
+            else if ( cmd == "BUYCART" ) {
+                string username;
+                string extra;
+                if(!(ss >> username) || (ss >> extra)) {
+                    cout << "Invalid username" << endl;
+                }
+                else {
+                    ds.buyCart(username);
+                }
+            }
+            else if ( cmd == "QUIT" ) {
+                string filename;
+                string extra;
+                if(!(ss >> filename) || (ss >> extra)) {
+                    cout << "Invalid request" << endl;
+                }
+                else {
+                    ofstream ofile(filename.c_str());
+                    if(!ofile) {
+                        cout << "Unable to save database" << endl;
+                    }
+                    else {
+                        ds.dump(ofile);
+                        ofile.close();
+                        if(!ofile) {
+                            cout << "Unable to save database" << endl;
+                        }
+                        else {
+                            done = true;
+                        }
+                    }
+                }
+            }
             else {
                 cout << "Unknown command" << endl;
             }
